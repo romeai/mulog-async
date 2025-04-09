@@ -1,3 +1,16 @@
+# `romeai/mulog-async`
+
+Thin fork of `mulog` that uses a dynamic var with bindings for local context
+instead of custom `ClojureThreadLocal` class.
+
+Bindings for dynamic vars are conveyed normally as per Clojure's binding
+conveyance, including being preserved by `core.async` (which internally saves
+and restores the current binding frame when dispatching into/out of an async
+block).
+
+The **Performance Impact** is definitely not negligible (each log call with
+local context takes around 1.5x as long). Use only when it solves a problem.
+
 # μ/log
 [![Clojars Project](https://img.shields.io/clojars/v/com.brunobonacci/mulog.svg)](https://clojars.org/com.brunobonacci/mulog)
 [![cljdoc badge](https://cljdoc.org/badge/com.brunobonacci/mulog)](https://cljdoc.org/d/com.brunobonacci/mulog/)

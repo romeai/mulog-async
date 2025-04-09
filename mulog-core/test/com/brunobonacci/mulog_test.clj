@@ -4,6 +4,14 @@
             [midje.sweet :refer :all]))
 
 
+(defmacro fact-when-async [& body]
+  (let [{:keys [major minor]} clojure.core/*clojure-version*]
+    (when (and (= 1 major) (>= minor 10))
+      `(do
+         (require '[clojure.core.async :as async])
+         (fact ~@body)))))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                            ;;
@@ -186,6 +194,41 @@
           {:mulog/event-name :test :global 1})
         (contains
           {:mulog/event-name :test :global 2 :local :a})])
+  )
+
+
+
+(fact-when-async "local-context: preserved across async scopes"
+
+  (tp/with-test-publisher
+    (u/with-context {:local 1}
+      (clojure.core.async/<!!
+       (clojure.core.async/go
+         (clojure.core.async/<! (clojure.core.async/timeout 100))
+         (u/log :test)))))
+
+  => (just
+      [(contains
+        {:mulog/event-name :test
+         :local 1})])
+  )
+
+
+
+(fact-when-async "with-context: doesn't interrupt async transpilation"
+
+  (tp/with-test-publisher
+    (clojure.core.async/<!!
+     (clojure.core.async/go
+       (clojure.core.async/<! (clojure.core.async/timeout 100))
+       (u/with-context {:local 1}
+         (clojure.core.async/<! (clojure.core.async/timeout 100))
+         (u/log :test)))))
+
+  => (just
+      [(contains
+        {:mulog/event-name :test
+         :local 1})])
   )
 
 
