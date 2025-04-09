@@ -215,7 +215,7 @@ For more information, please visit: https://github.com/BrunoBonacci/mulog
   regarding the current processing in the current thread. For example
   who is the user issuing the request and so on."
   []
-  @core/local-context)
+  core/*local-context*)
 
 
 
@@ -251,7 +251,7 @@ For more information, please visit: https://github.com/BrunoBonacci/mulog
   "
   {:style/indent 1}
   [context-map & body]
-  `(thread-local-binding [core/local-context (fast-map-merge @core/local-context ~context-map)]
+  `(binding [core/*local-context* (fast-map-merge core/*local-context* ~context-map)]
      ~@body))
 
 
@@ -379,13 +379,13 @@ For more information, please visit: https://github.com/BrunoBonacci/mulog
          ;; :mulog/trace-id and :mulog/timestamp are created in here
          ;; because the log function is called after the evaluation of body
          ;; is completed, and the timestamp wouldn't be correct
-         ptid# (get @core/local-context :mulog/parent-trace)
+         ptid# (get core/*local-context* :mulog/parent-trace)
          tid#  (flake)
          ts#   (System/currentTimeMillis)
          ;; start timer to track body execution
          t0#   (System/nanoTime)]
      ;; setting up the tracing re
-     (with-context {:mulog/root-trace   (or (get @core/local-context :mulog/root-trace) tid#)
+     (with-context {:mulog/root-trace   (or (get core/*local-context* :mulog/root-trace) tid#)
                     :mulog/parent-trace tid#}
        (try
          (let [r# (do ~@body)]
