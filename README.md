@@ -11,6 +11,18 @@ block).
 The **Performance Impact** is definitely not negligible (each log call with
 local context takes around 1.5x as long). Use only when it solves a problem.
 
+## Building with Nix
+
+1. Pin all deps by running `nix run .#locker` **in the project root**. Do this
+   after any changes to any lein `project.clj`.
+   - Watch for any errors in retrieving deps: you may get a successful exit
+     code, but resolution may still have failed due to ephemeral issues.
+2. Delete all the lines from `deps.lock.json` that refer to `mulog` itself:
+   ```
+   cat ver/mulog.version | xargs -I {} sed -i '/mulog-.*{}/d' deps.lock.json
+   ```
+3. Run `nix build .#all`
+
 # μ/log
 [![Clojars Project](https://img.shields.io/clojars/v/com.brunobonacci/mulog.svg)](https://clojars.org/com.brunobonacci/mulog)
 [![cljdoc badge](https://cljdoc.org/badge/com.brunobonacci/mulog)](https://cljdoc.org/d/com.brunobonacci/mulog/)
