@@ -6,6 +6,7 @@
     flake-utils.url = "github:numtide/flake-utils";
     nix-filter.url = "github:numtide/nix-filter";
     clojure-nix-locker.url = "github:bevuta/clojure-nix-locker";
+    clojure-nix-locker.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   nixConfig = {
