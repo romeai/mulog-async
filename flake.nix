@@ -2,7 +2,7 @@
   description = "Fork of μ/log with built-in core.async support.";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     flake-utils.url = "github:numtide/flake-utils";
     nix-filter.url = "github:numtide/nix-filter";
     clojure-nix-locker.url = "github:bevuta/clojure-nix-locker";
@@ -34,11 +34,22 @@
         filterSrc = nix-filter.lib;
 
         # Custom locker function to pin lein deps
+        leinBuildPath = pkgs.lib.makeBinPath [
+          pkgs.jdk
+          pkgs.leiningen
+        ];
         build-command = ''
+          export PATH=${leinBuildPath}:$PATH
           ${pkgs.babashka}/bin/bb build:core :skip-tests && \
           ${pkgs.babashka}/bin/bb -build:json :skip-tests && \
           ${pkgs.babashka}/bin/bb build:publishers :skip-tests && \
           ${pkgs.babashka}/bin/bb build:samplers :skip-tests
+
+          lockerHome="$HOME"
+          if [ -d "$tmp/home" ]; then
+            lockerHome="$tmp/home"
+          fi
+          rm -rf "$lockerHome/.m2/repository/com/brunobonacci/mulog"*
         '';
         lein-locker = clojure-nix-locker.lib.customLocker {
           inherit pkgs;
@@ -65,6 +76,15 @@
           nativeBuildInputs = [
             pkgs.babashka
             pkgs.leiningen
+            # Leiningen stamps every build-generated jar entry (MANIFEST, pom,
+            # compiled .class) with the wall-clock build time, so the jars —
+            # and thus this derivation's output — differ on every build. That
+            # non-determinism only surfaces downstream, where romeai's
+            # extra-deps-m2-repo fixed-output derivation content-hashes these
+            # jars: a clean CI builder rebuilds them and the FOD hash diverges.
+            # strip-nondeterminism (via this hook) normalizes all zip-entry
+            # timestamps in fixupPhase, making the jars byte-reproducible.
+            pkgs.stripJavaArchivesHook
           ];
           buildInputs = [ pkgs.jdk ];
           # Run the build command to build all jars.
